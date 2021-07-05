@@ -1,8 +1,9 @@
 import torch
 import numpy as np
 import plotly.graph_objects as go
+from einops import rearrange
 
-def BB_atom_coords_to_local_reference_frame(coords):
+def BB_atom_coords_to_local_reference_frame(coors):
     """ Computes residue reference frame from N-CA-C atoms.
     Assumes coords is of shape (n_residue, atom_type, coordinate) and atoms are ordered as N-CA-C.
     """
@@ -69,3 +70,17 @@ def plot_reference_frames(R,t):
             )
         data.append(mesh)
     return data
+
+def compute_FAPE_loss(pred_reference_frames, true_reference_frames, pred_positions, true_positions):
+    x_pred, x_true = pred_positions, true_positions
+    R_pred, t_pred = pred_reference_frames
+    R_true, t_true = true_reference_frames
+
+    x_local_pred = torch.einsum('b n i j, b p j -> b n p i', R_pred, x_pred) + rearrange(t_pred, 'b n i -> b n () i')
+    x_local_true = torch.einsum('b n i j, b p j -> b n p i', R_true, x_true) + rearrange(t_true, 'b n i -> b n () i')
+
+    diff = ((x_local_pred - x_local_true).pow(2).sum(-1) + 1e-4).pow(1/2)
+
+    loss = diff.clamp(max = 10).mean()/10
+
+    return loss
