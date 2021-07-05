@@ -71,12 +71,12 @@ class BackboneUpate(torch.nn.Module):
         self.to_correction = torch.nn.Linear(node_dim, 6)
 
     def forward(self, node_features):
-        # Predict quaternions and tranlation vector
+        # Predict quaternions and translation vector
         rot, t = self.to_correction(node_features).chunk(2,dim = -1)
 
         # Normalize quaternions
         norm = (1 + rot.pow(2).sum(-1, keepdim = True)).pow(1/2)
-        b, c, d = (trans/norm).chunk(3, dim = -1)
+        b, c, d = (t/norm).chunk(3, dim = -1)
         a = 1/norm
         a, b, c, d  = a.squeeze(-1), b.squeeze(-1), c.squeeze(-1), d.squeeze(-1)
 
