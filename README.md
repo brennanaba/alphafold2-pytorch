@@ -23,6 +23,6 @@ There is an unexplained lambda in the code that I have set to 1.
 ```python
 node_features = torch.randn((1,20,23))
 
-model = BackboneUpate(node_dim = 23)
+model = BackboneUpdate(node_dim = 23)
 R,t = model(node_features)
 ```
