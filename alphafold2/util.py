@@ -59,9 +59,7 @@ def plot_reference_frames(R,t):
             x=xs[0],
             y=xs[1],
             z=xs[2],
-            # Intensity of each vertex, which will be interpolated and color-coded
             # i, j and k give the vertices of triangles
-            # here we represent the 4 triangles of the tetrahedron surface
             i=[0,0,1],
             j=[1,2,2],
             k=[3,3,3],

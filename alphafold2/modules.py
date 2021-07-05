@@ -34,7 +34,7 @@ class InvariantPointAttention(torch.nn.Module):
         R,t = local_reference_frames
         wc = (2/9/self.n_query_points)**(1/2)/2
         vector_qk = self.to_vector_qk(node_features).chunk(2,dim = -1)
-        vector_q, vector_k = map(lambda t: rearrange(t, 'b n (h p d) -> b h n p d', h = self.heads, d = 3), vector_qk)
+        vector_q, vector_k = map(lambda x: rearrange(x, 'b n (h p d) -> b h n p d', h = self.heads, d = 3), vector_qk)
 
         global_vector_k = torch.einsum('b n i j, b h n p j -> b h n p i', R, vector_k) + rearrange(t, 'b n i -> b () n () i')
         global_vector_q = torch.einsum('b n i j, b h n p j -> b h n p i', R, vector_q) + rearrange(t, 'b n i -> b () n () i')
@@ -86,4 +86,42 @@ class BackboneUpdate(torch.nn.Module):
         R[..., 1,0], R[..., 1,1], R[..., 1,2] = (2*b*c + 2*a*d), (a**2 - b**2 + c**2 - d**2), (2*c*d - 2*a*b)
         R[..., 2,0], R[..., 2,1], R[..., 2,2] = (2*b*d - 2*a*c), (2*c*d + 2*a*b), (a**2 - b**2 - c**2 + d**2)
 
-        return R,t
+        return R, t
+
+class StructureUpdate(torch.nn.Module):
+    def __init__(self, node_dim, edge_dim, propagate_rotation_gradient = False, **kwargs):
+        super().__init__()
+        self.propagate_rotation_gradient = propagate_rotation_gradient
+
+        self.IPA = InvariantPointAttention(node_dim, edge_dim, **kwargs)
+        self.norm1 = torch.nn.Sequential(
+            torch.nn.Dropout(0.1),
+            torch.nn.LayerNorm(node_dim)
+        )
+        self.norm2 = torch.nn.Sequential(
+            torch.nn.Dropout(0.1),
+            torch.nn.LayerNorm(node_dim)
+        )
+        self.residual = torch.nn.Sequential(
+            torch.nn.Linear(node_dim, 2*node_dim),   # Pulling these dims out of nowhere
+            torch.nn.ReLU(),
+            torch.nn.Linear(2*node_dim, 2*node_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(2*node_dim, node_dim)
+        )
+
+        self.backbone_update = BackboneUpdate(node_dim)
+
+    def forward(self, node_features, edge_features, local_reference_frames):
+      R,t = local_reference_frames
+      s_i = self.IPA(node_features, edge_features, (R,t))
+      s_i = self.norm1(s_i)
+      s_i += self.residual(s_i)
+      s_i = self.norm2(s_i)
+      R_update, t_update = self.backbone_update(s_i)
+      R_new = torch.einsum("b n i j, b n j k -> b n i k", R, R_update)
+      t_new = torch.einsum('b n i j, b n j -> b n i', R, t_update) + t
+      if not self.propagate_rotation_gradient:
+          R_new = R_new.detach()
+
+      return s_i, (R_new, t_new)
