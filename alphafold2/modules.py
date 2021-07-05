@@ -64,7 +64,7 @@ class InvariantPointAttention(torch.nn.Module):
         return node_features + self.final_linear(combined)
 
 
-class BackboneUpate(torch.nn.Module):
+class BackboneUpdate(torch.nn.Module):
     def __init__(self, node_dim):
         super().__init__()
 
