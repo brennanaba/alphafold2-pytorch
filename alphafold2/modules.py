@@ -76,7 +76,7 @@ class BackboneUpate(torch.nn.Module):
 
         # Normalize quaternions
         norm = (1 + rot.pow(2).sum(-1, keepdim = True)).pow(1/2)
-        b, c, d = (t/norm).chunk(3, dim = -1)
+        b, c, d = (rot/norm).chunk(3, dim = -1)
         a = 1/norm
         a, b, c, d  = a.squeeze(-1), b.squeeze(-1), c.squeeze(-1), d.squeeze(-1)
 
