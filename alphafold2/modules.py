@@ -62,3 +62,28 @@ class InvariantPointAttention(torch.nn.Module):
         combined = torch.cat([edge_output, scalar_node_output, vector_node_output, vector_node_length], dim = -1)
 
         return node_features + self.final_linear(combined)
+
+
+class BackboneUpate(torch.nn.Module):
+    def __init__(self, node_dim):
+        super().__init__()
+
+        self.to_correction = torch.nn.Linear(node_dim, 6)
+
+    def forward(self, node_features):
+        # Predict quaternions and tranlation vector
+        rot, t = self.to_correction(node_features).chunk(2,dim = -1)
+
+        # Normalize quaternions
+        norm = (1 + rot.pow(2).sum(-1, keepdim = True)).pow(1/2)
+        b, c, d = (trans/norm).chunk(3, dim = -1)
+        a = 1/norm
+        a, b, c, d  = a.squeeze(-1), b.squeeze(-1), c.squeeze(-1), d.squeeze(-1)
+
+        # Make rotation matrix from quaternions
+        R = torch.zeros((*node_features.shape[:-1], 3, 3))
+        R[..., 0,0], R[..., 0,1], R[..., 0,2] = (a**2 + b**2 - c**2 - d**2), (2*b*c - 2*a*d), (2*b*d + 2*a*c)
+        R[..., 1,0], R[..., 1,1], R[..., 1,2] = (2*b*c + 2*a*d), (a**2 - b**2 + c**2 - d**2), (2*c*d - 2*a*b)
+        R[..., 2,0], R[..., 2,1], R[..., 2,2] = (2*b*d - 2*a*c), (2*c*d + 2*a*b), (a**2 - b**2 - c**2 + d**2)
+
+        return R,t
