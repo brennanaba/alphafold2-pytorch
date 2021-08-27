@@ -10,9 +10,7 @@ setup(
     include_package_data=True,
     packages=find_packages(include=('alphafold2', 'alphafold2.*')),
     install_requires=[
-        'numpy',
         'einops>=0.3',
         'torch>=1.6',
-        'plotly',
     ],
 )
