@@ -26,5 +26,5 @@ atom_coordinates = torch.randn((1,20,3,3)) # 3 atoms per residue
 rigid_residues = rigid_from_tensor(atom_coordinates)
 
 model = StructureUpdate(node_dim = 23, edge_dim = 5)
-updated_node_features, updated_rigid_residues = model(node_features)
+updated_node_features, updated_rigid_residues = model(node_features, edge_features, rigid_residues)
 ```
