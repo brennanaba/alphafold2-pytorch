@@ -42,7 +42,7 @@ class InvariantPointAttention(torch.nn.Module):
 
         global_vector_k = rigid_ @ vector_k
         global_vector_q = rigid_ @ vector_q
-        global_frame_distance = wc * global_vector_k.unsqueeze(-2).dist(global_vector_k.unsqueeze(-3)).sum(
+        global_frame_distance = wc * global_vector_q.unsqueeze(-2).dist(global_vector_k.unsqueeze(-3)).sum(
             -1) * rearrange(self.point_weight, "h -> () h () ()")
 
         # Combining attentions
