@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='alphafold2',
-    version='0.0.1',
+    version='0.0.2',
     description='Set of functions from AF2 paper',
     license='BSD 3-clause license',
     maintainer='Brennan Abanades',
